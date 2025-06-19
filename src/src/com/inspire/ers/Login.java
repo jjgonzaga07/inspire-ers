@@ -3,13 +3,32 @@ package com.inspire.ers;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.sql.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 
-public class Login extends JFrame {
+
+public class Login extends javax.swing.JFrame {
     private JTextField usernameField;
     private JPasswordField passwordField;
     private final String ADMIN_USERNAME = "admin";
     private final String ADMIN_PASSWORD = "admin123";
-
+    
+    public Connection cn;
+    public Statement st;
+    
+    private InputStream in;
+   
+  
     public Login() {
         setTitle("Inspire ERS - Admin Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -45,6 +64,19 @@ public class Login extends JFrame {
         // Login button
         JButton loginButton = new JButton("Login");
         loginButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            cn = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/ers?zeroDateTimeBehavior=CONVERT_TO_NULL",
+                "root",""
+            );
+            st = cn.createStatement();
+            JOptionPane.showMessageDialog(null,"Connected");
+        }
+        catch(Exception e) {
+            JOptionPane.showMessageDialog(null,"Not Connected");
+        }
         
         loginButton.addActionListener(new ActionListener() {
             @Override
