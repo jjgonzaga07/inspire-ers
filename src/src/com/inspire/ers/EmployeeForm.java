@@ -3,15 +3,21 @@ package com.inspire.ers;
 import javax.swing.*;
 import java.awt.*;
 import java.util.Date;
+<<<<<<< HEAD
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import src.com.inspire.ers.DBUtil;
+=======
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
+>>>>>>> uilogin
 
 public class EmployeeForm extends JFrame {
     private HomePage homePage;
     private Employee employee;
     private boolean isEditing;
+<<<<<<< HEAD
 
     // UI Components
     private JTextField firstNameField, lastNameField, middleNameField, idNumberField, emailField;
@@ -24,15 +30,46 @@ public class EmployeeForm extends JFrame {
         this(homePage, null);
     }
 
+=======
+    
+    private JTextField firstNameField;
+    private JTextField lastNameField;
+    private JTextField middleNameField;
+    private JTextField idNumberField;
+    private JSpinner dateHiredSpinner;
+    private JTextField emailField;
+    private JTextField addressField;
+    private JTextField cellphoneField;
+    private JTextField positionField;
+    private JTextField basicPayField;
+    private JTextField execAllowanceField;
+    private JTextField marketingAllowanceField;
+    private JTextField monthlySalaryField;
+    private JTextField sssField;
+    private JTextField philHealthField;
+    private JTextField pagIbigField;
+    private JTextField tinField;
+    private JTextField bankAccountField;
+    
+    public EmployeeForm(HomePage homePage) {
+        this(homePage, null);
+    }
+    
+>>>>>>> uilogin
     public EmployeeForm(HomePage homePage, Employee employee) {
         this.homePage = homePage;
         this.employee = employee;
         this.isEditing = (employee != null);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> uilogin
         setTitle(isEditing ? "Edit Employee" : "Add Employee");
         setSize(800, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+<<<<<<< HEAD
 
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
@@ -42,20 +79,45 @@ public class EmployeeForm extends JFrame {
         JPanel profilePanel = new JPanel(new GridLayout(0, 2, 10, 10));
         profilePanel.setBorder(BorderFactory.createTitledBorder("EMPLOYEE PROFILE"));
 
+=======
+        
+        // Main panel
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Employee Profile Section
+        JPanel profilePanel = new JPanel(new GridLayout(0, 2, 10, 10));
+        profilePanel.setBorder(BorderFactory.createTitledBorder("EMPLOYEE PROFILE"));
+        
+>>>>>>> uilogin
         firstNameField = new JTextField(20);
         lastNameField = new JTextField(20);
         middleNameField = new JTextField(20);
         idNumberField = new JTextField(20);
+<<<<<<< HEAD
 
+=======
+        
+        // Create date spinner
+>>>>>>> uilogin
         SpinnerDateModel dateModel = new SpinnerDateModel();
         dateHiredSpinner = new JSpinner(dateModel);
         JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(dateHiredSpinner, "MM/dd/yyyy");
         dateHiredSpinner.setEditor(dateEditor);
+<<<<<<< HEAD
 
         emailField = new JTextField(20);
         addressField = new JTextField(20);
         cellphoneField = new JTextField(20);
 
+=======
+        
+        emailField = new JTextField(20);
+        addressField = new JTextField(20);
+        cellphoneField = new JTextField(20);
+        
+>>>>>>> uilogin
         profilePanel.add(new JLabel("First Name"));
         profilePanel.add(firstNameField);
         profilePanel.add(new JLabel("Last Name"));
@@ -72,17 +134,29 @@ public class EmployeeForm extends JFrame {
         profilePanel.add(addressField);
         profilePanel.add(new JLabel("Cellphone No."));
         profilePanel.add(cellphoneField);
+<<<<<<< HEAD
 
         // Salary Panel
         JPanel salaryPanel = new JPanel(new GridLayout(0, 2, 10, 10));
         salaryPanel.setBorder(BorderFactory.createTitledBorder("SALARY"));
 
+=======
+        
+        // Salary Section
+        JPanel salaryPanel = new JPanel(new GridLayout(0, 2, 10, 10));
+        salaryPanel.setBorder(BorderFactory.createTitledBorder("SALARY"));
+        
+>>>>>>> uilogin
         positionField = new JTextField(20);
         basicPayField = new JTextField(20);
         execAllowanceField = new JTextField(20);
         marketingAllowanceField = new JTextField(20);
         monthlySalaryField = new JTextField(20);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> uilogin
         salaryPanel.add(new JLabel("Position"));
         salaryPanel.add(positionField);
         salaryPanel.add(new JLabel("Basic Pay"));
@@ -93,17 +167,29 @@ public class EmployeeForm extends JFrame {
         salaryPanel.add(marketingAllowanceField);
         salaryPanel.add(new JLabel("Monthly Salary"));
         salaryPanel.add(monthlySalaryField);
+<<<<<<< HEAD
 
         // Benefits Panel
         JPanel benefitsPanel = new JPanel(new GridLayout(0, 2, 10, 10));
         benefitsPanel.setBorder(BorderFactory.createTitledBorder("BENEFITS"));
 
+=======
+        
+        // Benefits Section
+        JPanel benefitsPanel = new JPanel(new GridLayout(0, 2, 10, 10));
+        benefitsPanel.setBorder(BorderFactory.createTitledBorder("BENEFITS"));
+        
+>>>>>>> uilogin
         sssField = new JTextField(20);
         philHealthField = new JTextField(20);
         pagIbigField = new JTextField(20);
         tinField = new JTextField(20);
         bankAccountField = new JTextField(20);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> uilogin
         benefitsPanel.add(new JLabel("SSS Number"));
         benefitsPanel.add(sssField);
         benefitsPanel.add(new JLabel("PhilHealth Number"));
@@ -114,17 +200,30 @@ public class EmployeeForm extends JFrame {
         benefitsPanel.add(tinField);
         benefitsPanel.add(new JLabel("Bank Account"));
         benefitsPanel.add(bankAccountField);
+<<<<<<< HEAD
 
         // Submit Button
         JButton submitButton = new JButton("SUBMIT");
         submitButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+=======
+        
+        // Submit Button
+        JButton submitButton = new JButton("SUBMIT");
+        submitButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+>>>>>>> uilogin
         submitButton.addActionListener(e -> {
             if (validateForm()) {
                 saveEmployee();
                 dispose();
             }
         });
+<<<<<<< HEAD
 
+=======
+        
+        // Add all panels to main panel
+>>>>>>> uilogin
         mainPanel.add(profilePanel);
         mainPanel.add(Box.createVerticalStrut(20));
         mainPanel.add(salaryPanel);
@@ -132,12 +231,25 @@ public class EmployeeForm extends JFrame {
         mainPanel.add(benefitsPanel);
         mainPanel.add(Box.createVerticalStrut(20));
         mainPanel.add(submitButton);
+<<<<<<< HEAD
 
         if (isEditing) populateFields();
 
         add(new JScrollPane(mainPanel));
     }
 
+=======
+        
+        // If editing, populate fields
+        if (isEditing) {
+            populateFields();
+        }
+        
+        // Add main panel to frame
+        add(new JScrollPane(mainPanel));
+    }
+    
+>>>>>>> uilogin
     private void populateFields() {
         firstNameField.setText(employee.getFirstName());
         lastNameField.setText(employee.getLastName());
@@ -158,16 +270,30 @@ public class EmployeeForm extends JFrame {
         tinField.setText(employee.getTinNumber());
         bankAccountField.setText(employee.getBankAccount());
     }
+<<<<<<< HEAD
 
     private boolean validateForm() {
         if (firstNameField.getText().trim().isEmpty() ||
             lastNameField.getText().trim().isEmpty() ||
             idNumberField.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please fill in all required fields!", "Validation Error", JOptionPane.ERROR_MESSAGE);
+=======
+    
+    private boolean validateForm() {
+        // Add validation logic here
+        if (firstNameField.getText().trim().isEmpty() ||
+            lastNameField.getText().trim().isEmpty() ||
+            idNumberField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Please fill in all required fields!",
+                "Validation Error",
+                JOptionPane.ERROR_MESSAGE);
+>>>>>>> uilogin
             return false;
         }
         return true;
     }
+<<<<<<< HEAD
 
     private void saveEmployee() {
     if (employee == null) employee = new Employee();
@@ -247,3 +373,41 @@ public class EmployeeForm extends JFrame {
     }
     }
 }
+=======
+    
+    private void saveEmployee() {
+        if (employee == null) {
+            employee = new Employee();
+        }
+        
+        employee.setFirstName(firstNameField.getText().trim());
+        employee.setLastName(lastNameField.getText().trim());
+        employee.setMiddleName(middleNameField.getText().trim());
+        employee.setIdNumber(idNumberField.getText().trim());
+        employee.setDateHired((Date) dateHiredSpinner.getValue());
+        employee.setEmailAddress(emailField.getText().trim());
+        employee.setCurrentAddress(addressField.getText().trim());
+        employee.setCellphoneNo(cellphoneField.getText().trim());
+        employee.setPosition(positionField.getText().trim());
+        
+        try {
+            employee.setBasicPay(Double.parseDouble(basicPayField.getText().trim()));
+            employee.setExecutiveAllowance(Double.parseDouble(execAllowanceField.getText().trim()));
+            employee.setMarketingTranspoAllowance(Double.parseDouble(marketingAllowanceField.getText().trim()));
+            employee.setMonthlySalary(Double.parseDouble(monthlySalaryField.getText().trim()));
+        } catch (NumberFormatException e) {
+            // Handle parsing errors if needed
+        }
+        
+        employee.setSssNumber(sssField.getText().trim());
+        employee.setPhilHealthNumber(philHealthField.getText().trim());
+        employee.setPagIbigNumber(pagIbigField.getText().trim());
+        employee.setTinNumber(tinField.getText().trim());
+        employee.setBankAccount(bankAccountField.getText().trim());
+        
+        if (!isEditing) {
+            homePage.addEmployee(employee);
+        }
+    }
+} 
+>>>>>>> uilogin
