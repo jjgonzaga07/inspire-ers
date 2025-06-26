@@ -1,1 +1,0 @@
-com.ers.main.Main
