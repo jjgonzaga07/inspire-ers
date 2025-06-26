@@ -10,7 +10,8 @@ public class Employee {
     private String position;
     private double basicPay, executiveAllowance, marketingTranspoAllowance, monthlySalary;
     private String sssNumber, philHealthNumber, pagIbigNumber, tinNumber, bankAccount;
-
+    private byte[] photo;
+    
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -50,4 +51,12 @@ public class Employee {
     public void setTinNumber(String tinNumber) { this.tinNumber = tinNumber; }
     public String getBankAccount() { return bankAccount; }
     public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }
+    
+public byte[] getPhoto() {
+    return photo;
+}
+
+public void setPhoto(byte[] photo) {
+    this.photo = photo;
+}
 }
