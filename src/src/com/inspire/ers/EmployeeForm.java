@@ -293,7 +293,7 @@ public class EmployeeForm extends JFrame {
             sql = "UPDATE employees SET first_name=?, last_name=?, middle_name=?, id_number=?, date_hired=?, email=?, address=?, cellphone=?, position=?, basic_pay=?, exec_allowance=?, marketing_allowance=?, monthly_salary=?, sss=?, philhealth=?, pagibig=?, tin=?, bank_account=?, photo=? WHERE id=?";
         } else {
             // INSERT new employee
-            sql = "INSERT INTO employees (first_name, last_name, middle_name, id_number, date_hired, email, address, cellphone, position, basic_pay, exec_allowance, marketing_allowance, monthly_salary, sss, philhealth, pagibig, tin, bank_account, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            sql = "INSERT INTO employees (first_name, last_name, middle_name, id_number, date_hired, email, address, cellphone, position, basic_pay, exec_allowance, marketing_allowance, monthly_salary, sss, philhealth, pagibig, tin, bank_account, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         }
 
         PreparedStatement stmt = conn.prepareStatement(sql);
@@ -336,9 +336,9 @@ public class EmployeeForm extends JFrame {
     }
 
     if (isEditing) {
-        homePage.refreshEmployeeList(); // reload all employees from DB
+        homePage.refreshEmployeeList();
     } else {
-        homePage.addEmployee(employee); // add only if it's a new one
+        homePage.addEmployee(employee);
     }
    }
 }

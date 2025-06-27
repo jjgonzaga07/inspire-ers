@@ -32,17 +32,22 @@ import java.util.Locale;
 
 public class PayrollPage extends JFrame {
     private String employeeName;
+    private String idNumber;
+    
     private DefaultTableModel tableModel;
     private JTable attendanceTable;
     private JLabel totalLabel;
     private double totalAmount = 0;
 
     // Constants
-    private static final double BASE_SALARY = 818.18; // Salary for 8 hrs
+//    private static final double BASE_SALARY = 818.18; // Salary for 8 hrs
+    private Double cachedBaseSalary = null;
+
     private static final double LATE_PENALTY_PER_MINUTE = 1.71;
 
-    public PayrollPage(String employeeName) {
+    public PayrollPage(String employeeName, String idNumber) {
         this.employeeName = employeeName;
+        this.idNumber = idNumber;
 
         setTitle("Payroll - Inspire");
         setSize(800, 600);
@@ -96,7 +101,7 @@ public class PayrollPage extends JFrame {
 
         mainPanel.add(topContainer, BorderLayout.NORTH);
 
-        String[] columns = {"DATE", "TIME-IN", "TIME-OUT", "LATE (mins)", "Paid Amount", "Remarks"};
+        String[] columns = {"ID", "DATE", "TIME-IN", "TIME-OUT", "LATE (mins)", "Paid Amount", "Remarks"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -107,6 +112,10 @@ public class PayrollPage extends JFrame {
         attendanceTable = new JTable(tableModel);
         loadDataFromDatabase(null, null);
         attendanceTable.setFillsViewportHeight(true);
+        attendanceTable.getColumnModel().getColumn(0).setMinWidth(0);
+attendanceTable.getColumnModel().getColumn(0).setMaxWidth(0);
+attendanceTable.getColumnModel().getColumn(0).setWidth(0);
+
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
@@ -133,22 +142,33 @@ public class PayrollPage extends JFrame {
 
         JPanel bottomPanel = new JPanel(new BorderLayout());
 
-        JButton addButton = new JButton("ADD");
-        bottomPanel.add(addButton, BorderLayout.WEST);
+// Create a left-aligned panel for both buttons
+JPanel westButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+JButton addButton = new JButton("ADD");
+JButton editButton = new JButton("EDIT");
+JButton removeButton = new JButton("REMOVE");
+westButtons.add(addButton);
+westButtons.add(editButton);
+westButtons.add(removeButton);
 
-        totalLabel = new JLabel("Total: ₱" + String.format("%.2f", totalAmount));
-        totalLabel.setHorizontalAlignment(JLabel.RIGHT);
-        bottomPanel.add(totalLabel, BorderLayout.EAST);
+bottomPanel.add(westButtons, BorderLayout.WEST);
+
+totalLabel = new JLabel("Total: ₱" + String.format("%.2f", totalAmount));
+totalLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+bottomPanel.add(totalLabel, BorderLayout.EAST);
+
 
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
 
         addButton.addActionListener(e -> showAddAttendanceDialog());
+        editButton.addActionListener(e -> showEditDialog());
+        removeButton.addActionListener(e -> removeSelectedRow());
 
         add(mainPanel);
         
         ActionListener filterAction = e -> {
-            int selectedMonthIndex = monthComboBox.getSelectedIndex(); // 0 = Jan
-            int selectedMonth = selectedMonthIndex + 1; // SQL months are 1-based
+            int selectedMonthIndex = monthComboBox.getSelectedIndex();
+            int selectedMonth = selectedMonthIndex + 1;
             int selectedYear = (int) yearComboBox.getSelectedItem();
 
             loadDataFromDatabase(selectedMonth, selectedYear);
@@ -350,21 +370,24 @@ public class PayrollPage extends JFrame {
             Date timeIn = (Date) timeInSpinner.getValue();
             int lateMinutes = calculateLateMinutes(timeIn);
 
-            // 💰 Calculate final salary with late deduction
-            double deduction = lateMinutes * LATE_PENALTY_PER_MINUTE;
-            double paidAmount = BASE_SALARY - deduction;
+            double baseSalary = getBaseSalaryFromDB(); // dynamic rate per minute
+double deduction = lateMinutes * LATE_PENALTY_PER_MINUTE;
+double paidAmount = (baseSalary * 480) - deduction;
+
 
             Date timeOut = (Date) timeOutSpinner.getValue();
             String remarks = getRemarks(timeIn, timeOut);
 
             Object[] rowData = {
-                dateFormat.format(dateSpinner.getValue()),
-                timeFormat.format(timeIn),
-                timeFormat.format(timeOut),
-                lateMinutes,
-                String.format("₱%.2f", paidAmount),
-                remarks
-            };
+    null, // placeholder for hidden ID (will be refreshed later)
+    dateFormat.format(dateSpinner.getValue()),
+    timeFormat.format(timeIn),
+    timeFormat.format(timeOut),
+    lateMinutes,
+    String.format("₱%.2f", paidAmount),
+    remarks
+};
+
 
 
             Date selectedDate = (Date) dateSpinner.getValue(); // retrieve date from spinner
@@ -379,7 +402,7 @@ public class PayrollPage extends JFrame {
             dialog.dispose();
 
                     });
-
+        
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.add(submitButton);
 
@@ -389,6 +412,210 @@ public class PayrollPage extends JFrame {
 
         dialog.setVisible(true);
     }
+    
+    private void showEditDialog() {
+    int selectedRow = attendanceTable.getSelectedRow();
+    int selectedId = (int) tableModel.getValueAt(selectedRow, 0); // hidden id
+
+    if (selectedRow == -1) {
+        JOptionPane.showMessageDialog(this, "Please select a row to edit.");
+        return;
+    }
+
+    JDialog dialog = new JDialog(this, "Edit Attendance", true);
+    dialog.setSize(400, 300);
+    dialog.setLocationRelativeTo(this);
+
+    JPanel panel = new JPanel(new GridLayout(0, 2, 10, 10));
+    panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+    // Load selected values
+    String dateStr = tableModel.getValueAt(selectedRow, 0).toString();
+    String timeInStr = tableModel.getValueAt(selectedRow, 1).toString();
+    String timeOutStr = tableModel.getValueAt(selectedRow, 2).toString();
+
+    SpinnerDateModel dateModel = new SpinnerDateModel();
+    JSpinner dateSpinner = new JSpinner(dateModel);
+    JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(dateSpinner, "MM/dd/yyyy");
+    dateSpinner.setEditor(dateEditor);
+
+    SpinnerDateModel inModel = new SpinnerDateModel();
+    JSpinner timeInSpinner = new JSpinner(inModel);
+    timeInSpinner.setEditor(new JSpinner.DateEditor(timeInSpinner, "hh:mm:ss a"));
+
+    SpinnerDateModel outModel = new SpinnerDateModel();
+    JSpinner timeOutSpinner = new JSpinner(outModel);
+    timeOutSpinner.setEditor(new JSpinner.DateEditor(timeOutSpinner, "hh:mm:ss a"));
+
+    try {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+        SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm:ss a");
+
+        dateSpinner.setValue(dateFormat.parse(dateStr));
+        timeInSpinner.setValue(timeFormat.parse(timeInStr));
+        timeOutSpinner.setValue(timeFormat.parse(timeOutStr));
+    } catch (Exception ex) {
+        ex.printStackTrace();
+    }
+
+    panel.add(new JLabel("DATE"));
+    panel.add(dateSpinner);
+    panel.add(new JLabel("TIME-IN"));
+    panel.add(timeInSpinner);
+    panel.add(new JLabel("TIME-OUT"));
+    panel.add(timeOutSpinner);
+
+    JButton submitButton = new JButton("SAVE");
+    submitButton.addActionListener(e -> {
+        try {
+            Date date = (Date) dateSpinner.getValue();
+            Date timeIn = (Date) timeInSpinner.getValue();
+            Date timeOut = (Date) timeOutSpinner.getValue();
+
+            int lateMinutes = calculateLateMinutes(timeIn);
+            double baseSalary = getBaseSalaryFromDB(); // dynamic rate per minute
+double deduction = lateMinutes * LATE_PENALTY_PER_MINUTE;
+double paidAmount = (baseSalary * 480) - deduction;
+
+            String remarks = getRemarks(timeIn, timeOut);
+
+            // Update JTable
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+            SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm:ss a");
+
+            tableModel.setValueAt(dateFormat.format(date), selectedRow, 0);
+            tableModel.setValueAt(timeFormat.format(timeIn), selectedRow, 1);
+            tableModel.setValueAt(timeFormat.format(timeOut), selectedRow, 2);
+            tableModel.setValueAt(lateMinutes, selectedRow, 3);
+            tableModel.setValueAt(String.format("₱%.2f", paidAmount), selectedRow, 4);
+            tableModel.setValueAt(remarks, selectedRow, 5);
+
+            // Update in DB
+            updatePayrollInDatabase(selectedId, date, timeIn, timeOut, lateMinutes, paidAmount, remarks);
+
+            loadDataFromDatabase(null, null); // refresh
+            dialog.dispose();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(dialog, "Edit Error: " + ex.getMessage());
+        }
+    });
+
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    buttonPanel.add(submitButton);
+
+    dialog.setLayout(new BorderLayout());
+    dialog.add(panel, BorderLayout.CENTER);
+    dialog.add(buttonPanel, BorderLayout.SOUTH);
+    dialog.setVisible(true);
+}
+    
+    private void updatePayrollInDatabase(int id, Date date, Date timeIn, Date timeOut, int lateMinutes, double paidAmount, String remarks) {
+    SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+
+    String sql = "UPDATE employee_payroll SET attendance_date = ?, time_in = ?, time_out = ?, late_minutes = ?, paid_amount = ?, remarks = ? WHERE id = ?";
+
+    try (Connection conn = DBUtil.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+        stmt.setString(1, new SimpleDateFormat("yyyy-MM-dd").format(date));
+        stmt.setString(2, timeFormat.format(timeIn));
+        stmt.setString(3, timeFormat.format(timeOut));
+        stmt.setInt(4, lateMinutes);
+        stmt.setDouble(5, paidAmount);
+        stmt.setString(6, remarks);
+        stmt.setInt(7, id);
+
+        stmt.executeUpdate();
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Update Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
+
+private void removeSelectedRow() {
+    int selectedRow = attendanceTable.getSelectedRow();
+    if (selectedRow == -1) {
+        JOptionPane.showMessageDialog(this, "Please select a row to remove.");
+        return;
+    }
+
+    int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this row?", "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+    if (confirm != JOptionPane.YES_OPTION) return;
+
+    try {
+        int selectedId = (int) tableModel.getValueAt(selectedRow, 0); // hidden ID
+        deleteFromDatabase(selectedId);
+        tableModel.removeRow(selectedRow);
+        JOptionPane.showMessageDialog(this, "Row deleted successfully.");
+        loadDataFromDatabase(null, null); // refresh table & total
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Delete Error: " + ex.getMessage());
+    }
+}
+
+private void deleteFromDatabase(int id) {
+    String sql = "DELETE FROM employee_payroll WHERE id = ?";
+    try (Connection conn = DBUtil.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+        stmt.setInt(1, id);
+        stmt.executeUpdate();
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Database Delete Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
+
+private double getBaseSalaryFromDB() {
+    if (cachedBaseSalary != null) return cachedBaseSalary;
+
+    String sql = "SELECT basic_pay FROM employees WHERE id_number = ?";
+    try (Connection conn = DBUtil.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        
+        stmt.setString(1, idNumber);
+        var rs = stmt.executeQuery();
+        
+        if (rs.next()) {
+            double basicPay = rs.getDouble("basic_pay");
+            cachedBaseSalary = basicPay / 22.0 / 480.0;
+            
+            System.out.println("Fetched basic_pay for ID " + idNumber + ": " + basicPay);
+            System.out.println("Computed base salary per minute: " + cachedBaseSalary);
+            return cachedBaseSalary;
+        } else {
+            JOptionPane.showMessageDialog(this, "Employee not found.");
+        }
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error fetching salary: " + ex.getMessage());
+    }
+
+    return 818.18;
+}
+
+private double fetchExecAllowance() {
+    String sql = "SELECT exec_allowance FROM employees WHERE id_number = ?";
+    try (Connection conn = DBUtil.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        
+        stmt.setString(1, idNumber);
+        var rs = stmt.executeQuery();
+        if (rs.next()) {
+            double allowance = rs.getDouble("exec_allowance");
+            System.out.println("Exec Allowance: " + allowance);
+            return allowance;
+        }
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error fetching exec_allowance: " + ex.getMessage());
+    }
+    return 0.0;
+}
+
+
 
     private int calculateLateMinutes(Date timeIn) {
         Calendar scheduled = Calendar.getInstance();
@@ -426,38 +653,40 @@ public class PayrollPage extends JFrame {
 
 //        if (isLate && isEarlyLeave) return "Tardy, Early Leaving";
 //        else if (isLate) return "Tardy";
-        if (isLate) return "[Tardy]";
-        else if (isEarlyLeave) return "[Early Leaving]";
+        if (isLate) return "Tardy";
+        else if (isEarlyLeave) return "Early Leaving";
         else return "On Time";
      }
     
         private void saveToDatabase(Date date, Date timeIn, Date timeOut, int lateMinutes, double paidAmount, String remarks) {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 
+    String sql = "INSERT INTO employee_payroll (employee_name, attendance_date, time_in, time_out, late_minutes, paid_amount, remarks, id_number) " +
+                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
-        String sql = "INSERT INTO employee_payroll (employee_name, attendance_date, time_in, time_out, late_minutes, paid_amount, remarks) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
+    try (Connection conn = DBUtil.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        stmt.setString(1, employeeName);
+         // insert ID number
+        stmt.setString(2, dateFormat.format(date));
+        stmt.setString(3, timeFormat.format(timeIn));
+        stmt.setString(4, timeFormat.format(timeOut));
+        stmt.setInt(5, lateMinutes);
+        stmt.setDouble(6, paidAmount);
+        stmt.setString(7, remarks);
+        stmt.setString(8, idNumber);
 
-            stmt.setString(1, employeeName);
-            stmt.setString(2, dateFormat.format(date));
-            stmt.setString(3, timeFormat.format(timeIn));
-            stmt.setString(4, timeFormat.format(timeOut));
+        stmt.executeUpdate();
+System.out.println("Saving to DB - ID: " + idNumber + ", Name: " + employeeName);
 
-            stmt.setInt(5, lateMinutes);
-            stmt.setDouble(6, paidAmount);
-            stmt.setString(7, remarks);
-
-            stmt.executeUpdate();
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
+}
+
     
     private void loadDataFromDatabase(Integer filterMonth, Integer filterYear) {
     tableModel.setRowCount(0);
@@ -466,7 +695,7 @@ public class PayrollPage extends JFrame {
     SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
     SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm:ss a");
 
-    String sql = "SELECT attendance_date, time_in, time_out, late_minutes, paid_amount, remarks " +
+    String sql = "SELECT id, attendance_date, time_in, time_out, late_minutes, paid_amount, remarks " +
                  "FROM employee_payroll WHERE employee_name = ?";
 
     if (filterMonth != null && filterYear != null) {
@@ -491,8 +720,10 @@ public class PayrollPage extends JFrame {
             int late = rs.getInt("late_minutes");
             double paid = rs.getDouble("paid_amount");
             String remarks = rs.getString("remarks");
+            int id = rs.getInt("id");
 
             tableModel.addRow(new Object[]{
+                id,
                 date,
                 timeIn,
                 timeOut,
@@ -503,6 +734,9 @@ public class PayrollPage extends JFrame {
 
             totalAmount += paid;
         }
+
+         // ✅ Fetch and add exec_allowance here
+        totalAmount += fetchExecAllowance();
 
         totalLabel.setText("Total: ₱" + String.format("%.2f", totalAmount));
 
