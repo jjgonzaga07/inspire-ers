@@ -190,9 +190,13 @@ public class HomePage extends JFrame {
         });
 
         payrollBtn.addActionListener(e -> {
-            PayrollPage payrollPage = new PayrollPage(employee.getFirstName() + " " + employee.getLastName());
-            payrollPage.setVisible(true);
-        });
+    String fullName = employee.getFirstName() + " " + employee.getMiddleName() + " " + employee.getLastName();
+    String idNumber = employee.getIdNumber(); // must be available in Employee class
+    PayrollPage payrollPage = new PayrollPage(fullName, idNumber);
+    payrollPage.setVisible(true);
+});
+
+
 
         removeBtn.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
