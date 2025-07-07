@@ -36,8 +36,12 @@ public class PayrollPage extends JFrame {
     
     private DefaultTableModel tableModel;
     private JTable attendanceTable;
-    private JLabel totalLabel;
+//    private JLabel totalLabel;
     private double totalAmount = 0;
+    private JLabel totalLabel = new JLabel("Base Total: ₱0.00");
+private JLabel overtimeLabel = new JLabel("Total Overtime: 0 minutes");
+private JLabel finalTotalLabel = new JLabel("Final Total: ₱0.00");
+
 
     // Constants
 //    private static final double BASE_SALARY = 818.18; // Salary for 8 hrs
@@ -56,6 +60,7 @@ public class PayrollPage extends JFrame {
         
         totalLabel = new JLabel("Total: ");
 //        add(totalLabel, BorderLayout.SOUTH); //
+
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -100,8 +105,8 @@ public class PayrollPage extends JFrame {
         topContainer.add(controlsPanel);
 
         mainPanel.add(topContainer, BorderLayout.NORTH);
-
-        String[] columns = {"ID", "DATE", "TIME-IN", "TIME-OUT", "LATE (mins)", "Paid Amount", "Remarks"};
+//  String[] columns = {"ID", "DATE", "TIME-IN", "TIME-OUT", "LATE (mins)", "Overtime (min)", "Paid Amount", "Remarks"};
+        String[] columns = {"ID", "DATE", "TIME-IN", "TIME-OUT","Overtime (min)", "Paid Amount"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -113,8 +118,8 @@ public class PayrollPage extends JFrame {
         loadDataFromDatabase(null, null);
         attendanceTable.setFillsViewportHeight(true);
         attendanceTable.getColumnModel().getColumn(0).setMinWidth(0);
-attendanceTable.getColumnModel().getColumn(0).setMaxWidth(0);
-attendanceTable.getColumnModel().getColumn(0).setWidth(0);
+        attendanceTable.getColumnModel().getColumn(0).setMaxWidth(0);
+        attendanceTable.getColumnModel().getColumn(0).setWidth(0);
 
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
@@ -141,21 +146,25 @@ attendanceTable.getColumnModel().getColumn(0).setWidth(0);
                 exportButton.addActionListener(e -> exportToCSV());
 
         JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(totalLabel);
+        bottomPanel.add(overtimeLabel);
+        bottomPanel.add(finalTotalLabel);
+        add(bottomPanel, BorderLayout.SOUTH);
 
-// Create a left-aligned panel for both buttons
-JPanel westButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-JButton addButton = new JButton("ADD");
-JButton editButton = new JButton("EDIT");
-JButton removeButton = new JButton("REMOVE");
-westButtons.add(addButton);
-westButtons.add(editButton);
-westButtons.add(removeButton);
+        // Create a left-aligned panel for both buttons
+        JPanel westButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        JButton addButton = new JButton("ADD");
+        JButton editButton = new JButton("EDIT");
+        JButton removeButton = new JButton("REMOVE");
+        westButtons.add(addButton);
+        westButtons.add(editButton);
+        westButtons.add(removeButton);
 
-bottomPanel.add(westButtons, BorderLayout.WEST);
+        bottomPanel.add(westButtons, BorderLayout.WEST);
 
-totalLabel = new JLabel("Total: ₱" + String.format("%.2f", totalAmount));
-totalLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-bottomPanel.add(totalLabel, BorderLayout.EAST);
+        totalLabel = new JLabel("Total: ₱" + String.format("%.2f", totalAmount));
+        totalLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        bottomPanel.add(totalLabel, BorderLayout.EAST);
 
 
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
@@ -290,6 +299,7 @@ bottomPanel.add(totalLabel, BorderLayout.EAST);
         String timeInStr = data[1].replace("\"", "").trim();
         String timeOutStr = data[2].replace("\"", "").trim();
         int lateMinutes = Integer.parseInt(data[3].replace("\"", "").trim());
+        int overtimeMinutes = Integer.parseInt(data[4].replace("\"", "").trim());
         double paidAmount = Double.parseDouble(data[4].replace("\"₱", "").replace("\"", "").trim());
         String remarks = data[5].replace("\"", "").trim();
 
@@ -297,7 +307,8 @@ bottomPanel.add(totalLabel, BorderLayout.EAST);
         Date timeIn = timeFormat.parse(timeInStr);
         Date timeOut = timeFormat.parse(timeOutStr);
 
-        saveToDatabase(date, timeIn, timeOut, lateMinutes, paidAmount, remarks);
+        saveToDatabase(date, timeIn, timeOut, lateMinutes, overtimeMinutes, paidAmount, remarks);
+
     }
 
     reader.close();
@@ -319,6 +330,7 @@ bottomPanel.add(totalLabel, BorderLayout.EAST);
         String timeInStr = row.getCell(1).toString().trim();
         String timeOutStr = row.getCell(2).toString().trim();
         int lateMinutes = (int) row.getCell(3).getNumericCellValue();
+        int overtimeMinutes = (int) row.getCell(4).getNumericCellValue();
         double paidAmount = row.getCell(4).getNumericCellValue();
         String remarks = row.getCell(5).toString().trim();
 
@@ -326,7 +338,8 @@ bottomPanel.add(totalLabel, BorderLayout.EAST);
         Date timeIn = timeFormat.parse(timeInStr);
         Date timeOut = timeFormat.parse(timeOutStr);
 
-        saveToDatabase(date, timeIn, timeOut, lateMinutes, paidAmount, remarks);
+       saveToDatabase(date, timeIn, timeOut, lateMinutes, overtimeMinutes, paidAmount, remarks);
+
     }
 
     workbook.close();
@@ -368,36 +381,38 @@ bottomPanel.add(totalLabel, BorderLayout.EAST);
             SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm:ss a");
 
             Date timeIn = (Date) timeInSpinner.getValue();
-            int lateMinutes = calculateLateMinutes(timeIn);
+              Date timeOut = (Date) timeOutSpinner.getValue();
+           
+              
+              int lateMinutes = calculateLateMinutes(timeIn);              
+             int overtimeMinutes = calculateOvertimeMinutes(timeIn, timeOut); // 🔧 NEW
+         
+
 
             double baseSalary = getBaseSalaryFromDB(); // dynamic rate per minute
-double deduction = lateMinutes * LATE_PENALTY_PER_MINUTE;
-double paidAmount = (baseSalary * 480) - deduction;
+            double deduction = lateMinutes * LATE_PENALTY_PER_MINUTE;
+            double paidAmount = (baseSalary * 480) - deduction;
 
-
-            Date timeOut = (Date) timeOutSpinner.getValue();
             String remarks = getRemarks(timeIn, timeOut);
-
+            
             Object[] rowData = {
-    null, // placeholder for hidden ID (will be refreshed later)
-    dateFormat.format(dateSpinner.getValue()),
-    timeFormat.format(timeIn),
-    timeFormat.format(timeOut),
-    lateMinutes,
-    String.format("₱%.2f", paidAmount),
-    remarks
-};
-
-
-
-            Date selectedDate = (Date) dateSpinner.getValue(); // retrieve date from spinner
+                null, // placeholder for hidden ID (will be refreshed later)
+                dateFormat.format(dateSpinner.getValue()),
+                timeFormat.format(timeIn),
+                timeFormat.format(timeOut),
+                lateMinutes,
+                 overtimeMinutes,
+                String.format("₱%.2f", paidAmount),
+                remarks
+         };
 
             tableModel.addRow(rowData);
 //            totalAmount += paidAmount;
 //            totalLabel.setText("Total: ₱" + String.format("%.2f", totalAmount));
-
+  Date selectedDate = (Date) dateSpinner.getValue(); // retrieve date from spinner
             // 🔧 Save to database
-            saveToDatabase(selectedDate, timeIn, timeOut, lateMinutes, paidAmount, remarks);
+        saveToDatabase(selectedDate, timeIn, timeOut, lateMinutes, overtimeMinutes, paidAmount, remarks);
+
 
             dialog.dispose();
 
@@ -412,6 +427,26 @@ double paidAmount = (baseSalary * 480) - deduction;
 
         dialog.setVisible(true);
     }
+    
+
+private int calculateOvertimeMinutes(Date timeIn, Date timeOut) {
+    Calendar inCal = Calendar.getInstance();
+    inCal.setTime(timeIn);
+
+    Calendar outCal = Calendar.getInstance();
+    outCal.setTime(timeOut);
+
+    long millisWorked = outCal.getTimeInMillis() - inCal.getTimeInMillis();
+    int totalMinutesWorked = (int) (millisWorked / (1000 * 60));
+
+    int requiredMinutes = 9 * 60; // 9 hours = 540 minutes
+    int overtimeMinutes = totalMinutesWorked - requiredMinutes;
+
+    return Math.max(0, overtimeMinutes); // Only return positive overtime
+}
+
+
+
     
     private void showEditDialog() {
     int selectedRow = attendanceTable.getSelectedRow();
@@ -472,10 +507,13 @@ double paidAmount = (baseSalary * 480) - deduction;
             Date timeIn = (Date) timeInSpinner.getValue();
             Date timeOut = (Date) timeOutSpinner.getValue();
 
-            int lateMinutes = calculateLateMinutes(timeIn);
-            double baseSalary = getBaseSalaryFromDB(); // dynamic rate per minute
-double deduction = lateMinutes * LATE_PENALTY_PER_MINUTE;
-double paidAmount = (baseSalary * 480) - deduction;
+        long workedMillis = timeOut.getTime() - timeIn.getTime();
+        int totalMinutesWorked = (int) (workedMillis / (60 * 1000));
+        int overtimeMinutes = Math.max(totalMinutesWorked - 540, 0); // 540 = 9 hours
+        double perMinute = getBaseSalaryFromDB();
+        double paidAmount = perMinute * totalMinutesWorked;
+
+
 
             String remarks = getRemarks(timeIn, timeOut);
 
@@ -486,12 +524,14 @@ double paidAmount = (baseSalary * 480) - deduction;
             tableModel.setValueAt(dateFormat.format(date), selectedRow, 0);
             tableModel.setValueAt(timeFormat.format(timeIn), selectedRow, 1);
             tableModel.setValueAt(timeFormat.format(timeOut), selectedRow, 2);
-            tableModel.setValueAt(lateMinutes, selectedRow, 3);
+//            tableModel.setValueAt(lateMinutes, selectedRow, 3);
+            tableModel.setValueAt(formatMinutesToHHMM(overtimeMinutes), selectedRow, 4); // if this is your OT column
+
             tableModel.setValueAt(String.format("₱%.2f", paidAmount), selectedRow, 4);
             tableModel.setValueAt(remarks, selectedRow, 5);
 
             // Update in DB
-            updatePayrollInDatabase(selectedId, date, timeIn, timeOut, lateMinutes, paidAmount, remarks);
+            updatePayrollInDatabase(selectedId, date, timeIn, timeOut,overtimeMinutes, paidAmount, remarks);
 
             loadDataFromDatabase(null, null); // refresh
             dialog.dispose();
@@ -510,7 +550,7 @@ double paidAmount = (baseSalary * 480) - deduction;
     dialog.setVisible(true);
 }
     
-    private void updatePayrollInDatabase(int id, Date date, Date timeIn, Date timeOut, int lateMinutes, double paidAmount, String remarks) {
+      private void updatePayrollInDatabase(int id, Date date, Date timeIn, Date timeOut, int lateMinutes, double paidAmount, String remarks) {
     SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 
     String sql = "UPDATE employee_payroll SET attendance_date = ?, time_in = ?, time_out = ?, late_minutes = ?, paid_amount = ?, remarks = ? WHERE id = ?";
@@ -571,7 +611,7 @@ private void deleteFromDatabase(int id) {
 private double getBaseSalaryFromDB() {
     if (cachedBaseSalary != null) return cachedBaseSalary;
 
-    String sql = "SELECT basic_pay FROM employees WHERE id_number = ?";
+    String sql = "SELECT basic_pay FROM employees WHERE id = ?";
     try (Connection conn = DBUtil.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
         
@@ -597,7 +637,7 @@ private double getBaseSalaryFromDB() {
 }
 
 private double fetchExecAllowance() {
-    String sql = "SELECT exec_allowance FROM employees WHERE id_number = ?";
+    String sql = "SELECT exec_allowance FROM employees WHERE id = ?";
     try (Connection conn = DBUtil.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
         
@@ -625,7 +665,8 @@ private double fetchExecAllowance() {
         scheduled.set(Calendar.SECOND, 0);
 
         long diffMillis = timeIn.getTime() - scheduled.getTimeInMillis();
-        int lateMinutes = (int) (diffMillis / (60 * 1000));
+      int lateMinutes = 0; // No need for penalty
+
 
         return Math.max(0, lateMinutes);
     }
@@ -658,25 +699,29 @@ private double fetchExecAllowance() {
         else return "On Time";
      }
     
-        private void saveToDatabase(Date date, Date timeIn, Date timeOut, int lateMinutes, double paidAmount, String remarks) {
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+       private void saveToDatabase(Date date, Date timeIn, Date timeOut, int lateMinutes, int overtimeMinutes, double paidAmount, String remarks)
+        {
+           SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+           SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
 
-    String sql = "INSERT INTO employee_payroll (employee_name, attendance_date, time_in, time_out, late_minutes, paid_amount, remarks, id_number) " +
-                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO employee_payroll (employee_name, attendance_date, time_in, time_out, late_minutes, overtime_minutes, paid_amount, remarks, id_number) " +
+             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    try (Connection conn = DBUtil.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-        stmt.setString(1, employeeName);
-         // insert ID number
-        stmt.setString(2, dateFormat.format(date));
-        stmt.setString(3, timeFormat.format(timeIn));
-        stmt.setString(4, timeFormat.format(timeOut));
-        stmt.setInt(5, lateMinutes);
-        stmt.setDouble(6, paidAmount);
-        stmt.setString(7, remarks);
-        stmt.setString(8, idNumber);
+           try (Connection conn = DBUtil.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+               stmt.setString(1, employeeName);
+                // insert ID number
+               stmt.setString(2, dateFormat.format(date));
+               stmt.setString(3, timeFormat.format(timeIn));
+               stmt.setString(4, timeFormat.format(timeOut));
+              stmt.setInt(5, lateMinutes);
+            stmt.setInt(6, overtimeMinutes);
+            stmt.setDouble(7, paidAmount);
+            stmt.setString(8, remarks);
+            stmt.setString(9, idNumber);
+
 
         stmt.executeUpdate();
 System.out.println("Saving to DB - ID: " + idNumber + ", Name: " + employeeName);
@@ -687,15 +732,21 @@ System.out.println("Saving to DB - ID: " + idNumber + ", Name: " + employeeName)
     }
 }
 
+  private String formatMinutesToHHMM(int minutes) {
+    int hours = minutes / 60;
+    int mins = minutes % 60;
+    return String.format("%02d:%02d", hours, mins);
+}
     
-    private void loadDataFromDatabase(Integer filterMonth, Integer filterYear) {
+   private void loadDataFromDatabase(Integer filterMonth, Integer filterYear) {
     tableModel.setRowCount(0);
     totalAmount = 0;
+    int totalOvertimeMinutes = 0;
 
     SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
     SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm:ss a");
 
-    String sql = "SELECT id, attendance_date, time_in, time_out, late_minutes, paid_amount, remarks " +
+    String sql = "SELECT id, attendance_date, time_in, time_out, late_minutes, overtime_minutes, paid_amount, remarks " +
                  "FROM employee_payroll WHERE employee_name = ?";
 
     if (filterMonth != null && filterYear != null) {
@@ -718,6 +769,8 @@ System.out.println("Saving to DB - ID: " + idNumber + ", Name: " + employeeName)
             String timeIn = timeFormat.format(rs.getTime("time_in"));
             String timeOut = timeFormat.format(rs.getTime("time_out"));
             int late = rs.getInt("late_minutes");
+            int overtime = rs.getInt("overtime_minutes");
+        
             double paid = rs.getDouble("paid_amount");
             String remarks = rs.getString("remarks");
             int id = rs.getInt("id");
@@ -727,23 +780,36 @@ System.out.println("Saving to DB - ID: " + idNumber + ", Name: " + employeeName)
                 date,
                 timeIn,
                 timeOut,
-                late,
+//                late,
+                overtime, // ✅ Clean formatted display
                 String.format("₱%.2f", paid),
-                remarks
+//                remarks
             });
 
+
             totalAmount += paid;
+            totalOvertimeMinutes += overtime;
         }
 
-         // ✅ Fetch and add exec_allowance here
-        totalAmount += fetchExecAllowance();
+        // ✅ Fetch and add exec_allowance
+        double execAllowance = fetchExecAllowance();
+        totalAmount += execAllowance;
 
-        totalLabel.setText("Total: ₱" + String.format("%.2f", totalAmount));
+        // ✅ Compute overtime pay (assume ₱2 per minute overtime — adjust as needed)
+        double overtimeRatePerMinute = 2.0;
+        double totalOvertimePay = totalOvertimeMinutes * overtimeRatePerMinute;
+
+        // ✅ Compute final total including overtime pay
+        double finalTotal = totalAmount + totalOvertimePay;
+
+        // ✅ Update UI Labels
+        totalLabel.setText("Base Total: ₱" + String.format("%.2f", totalAmount));
+        overtimeLabel.setText("Total Overtime: " + totalOvertimeMinutes + " minutes (₱" + String.format("%.2f", totalOvertimePay) + ")");
+        finalTotalLabel.setText("Final Total: ₱" + String.format("%.2f", finalTotal));
 
     } catch (Exception ex) {
         ex.printStackTrace();
         JOptionPane.showMessageDialog(this, "Load Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
 }
-
 }
