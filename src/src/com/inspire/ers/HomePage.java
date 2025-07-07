@@ -50,10 +50,14 @@ public class HomePage extends JFrame {
 
         JButton addEmployeeBtn = new JButton("ADD EMPLOYEE");
         buttonPanel.add(addEmployeeBtn);
+        
+        JButton finalPayrollBtn = new JButton("FINAL PAYROLL");
+        buttonPanel.add(finalPayrollBtn);
+
 
         employeeCountLabel = new JLabel("#Employee: 0");
         employeeCountLabel.setForeground(Color.WHITE);
-        buttonPanel.add(Box.createHorizontalStrut(50));
+        buttonPanel.add(Box.createHorizontalStrut(300));
         buttonPanel.add(employeeCountLabel);
 
         topPanel.add(buttonPanel, BorderLayout.WEST);
@@ -103,6 +107,12 @@ public class HomePage extends JFrame {
             EmployeeForm employeeForm = new EmployeeForm(this);
             employeeForm.setVisible(true);
         });
+        
+        finalPayrollBtn.addActionListener(e -> {
+            FinalPayrollPage finalPayrollPage = new FinalPayrollPage(); // replace with your actual class
+            finalPayrollPage.setVisible(true);
+        });
+
         
         //        payrollBtn.addActionListener(e -> {
 //            if (employees.isEmpty()) {
