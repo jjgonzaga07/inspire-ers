@@ -1,4 +1,4 @@
-package com.inspire.ers;
+ package com.inspire.ers;
 
 import javax.swing.*;
 import java.awt.*;
@@ -47,7 +47,12 @@ public class HomePage extends JFrame {
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         buttonPanel.setOpaque(false);
+        
+        // Executive Button
+        JButton executiveBtn = new JButton("EXECUTIVE");
+        buttonPanel.add(executiveBtn);
 
+        // Add Employee Button
         JButton addEmployeeBtn = new JButton("ADD EMPLOYEE");
         buttonPanel.add(addEmployeeBtn);
 
@@ -97,6 +102,13 @@ public class HomePage extends JFrame {
 
         // Add main panel to frame
         add(mainPanel);
+        
+        
+        executiveBtn.addActionListener(e -> {
+            ExecutivePage executivePage = new ExecutivePage(); // Ensure this class exists
+            executivePage.setVisible(true);
+        });
+
 
         // Action listeners
         addEmployeeBtn.addActionListener(e -> {
@@ -163,50 +175,62 @@ public class HomePage extends JFrame {
         employeeListPanel.repaint();
     }
 
-    private JPanel createEmployeePanel(Employee employee) {
-        JPanel employeePanel = new JPanel(new BorderLayout());
-        employeePanel.setBorder(BorderFactory.createEtchedBorder());
+private JPanel createEmployeePanel(Employee employee) {
+    JPanel employeePanel = new JPanel(new BorderLayout());
+    employeePanel.setBorder(BorderFactory.createEtchedBorder());
 
-        JLabel nameLabel = new JLabel(employee.getFirstName() + " " + employee.getLastName());
-        nameLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        employeePanel.add(nameLabel, BorderLayout.WEST);
+    JLabel nameLabel = new JLabel(employee.getFirstName() + " " + employee.getLastName());
+    nameLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+    employeePanel.add(nameLabel, BorderLayout.WEST);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton editBtn = new JButton("Edit");
-        JButton payrollBtn = new JButton("Payroll");
-        JButton removeBtn = new JButton("Remove");
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    JButton editBtn = new JButton("Edit");
+    JButton payrollBtn = new JButton("Payroll");
+    JButton removeBtn = new JButton("Remove");
 
-        buttonPanel.add(payrollBtn);
-        buttonPanel.add(editBtn);
-        buttonPanel.add(removeBtn);
+    buttonPanel.add(payrollBtn);
+    buttonPanel.add(editBtn);
+    buttonPanel.add(removeBtn);
 
-        JPanel rightWrapper = new JPanel(new GridBagLayout());
-        rightWrapper.add(buttonPanel);
-        employeePanel.add(rightWrapper, BorderLayout.EAST);
+    JPanel rightWrapper = new JPanel(new GridBagLayout());
+    rightWrapper.add(buttonPanel);
+    employeePanel.add(rightWrapper, BorderLayout.EAST);
 
-        editBtn.addActionListener(e -> {
-            EmployeeForm editForm = new EmployeeForm(this, employee);
-            editForm.setVisible(true);
-        });
+    // Edit button
+    editBtn.addActionListener(e -> {
+        EmployeeForm editForm = new EmployeeForm(HomePage.this, employee);
+        editForm.setVisible(true);
+    });
 
-        payrollBtn.addActionListener(e -> {
-            PayrollPage payrollPage = new PayrollPage(employee.getFirstName() + " " + employee.getLastName());
-            payrollPage.setVisible(true);
-        });
+    // Payroll button
+    payrollBtn.addActionListener(e -> {
+        String middleName = employee.getMiddleName() != null ? employee.getMiddleName() : "";
+        String fullName = employee.getFirstName() + " " + middleName + " " + employee.getLastName();
+        String idNumber = String.valueOf(employee.getId()); // using ID for FK
+        
+      
 
-        removeBtn.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    "Are you sure you want to remove this employee?",
-                    "Confirm Remove", JOptionPane.YES_NO_OPTION);
 
-            if (confirm == JOptionPane.YES_OPTION) {
-                EmployeeDAO.softRemoveEmployee(employee.getId());
-                refreshEmployeeList();
-            }
-        });
+        PayrollPage payrollPage = new PayrollPage(fullName.trim(), idNumber);
+        payrollPage.setVisible(true);
+    });
 
-        return employeePanel;
-    }
+    // Remove button
+    removeBtn.addActionListener(e -> {
+        int confirm = JOptionPane.showConfirmDialog(HomePage.this,
+                "Are you sure you want to remove this employee?",
+                "Confirm Remove", JOptionPane.YES_NO_OPTION);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            EmployeeDAO.softRemoveEmployee(employee.getId());
+            refreshEmployeeList();
+        }
+    });
+
+    return employeePanel;
+}
+
+ 
 
     private void filterEmployeeList(String searchText) {
         employeeListPanel.removeAll();

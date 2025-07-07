@@ -1,5 +1,10 @@
+HomePage$HomePage$2
+HomePage$HomePage$3
+HomePage$HomePage$1
 HomePage
 com.inspire.ers.HomePage
+HomePage$HomePage
 com.inspire.ers.HomePage$1
 com.inspire.ers.HomePage$2
 com.inspire.ers.HomePage$3
+com.inspire.ers.HomePage$4
